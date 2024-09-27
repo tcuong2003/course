@@ -1,6 +1,6 @@
 bcrypt==4.2.0
 crispy-bootstrap4==2024.1
-Django==5.0.9
+Django==4.2.5
 django-crispy-forms==2.3
 et-xmlfile==1.1.0
 numpy==2.1.1
