@@ -75,12 +75,24 @@ WSGI_APPLICATION = 'course.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': BASE_DIR / 'db.sqlite3',
+#     }
+# }
+
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'course',     # Tên cơ sở dữ liệu bạn đã tạo
+        'USER': 'postgres',           # Tên người dùng PostgreSQL
+        'PASSWORD': '20031101',       # Mật khẩu của người dùng
+        'HOST': 'localhost',               # Địa chỉ máy chủ (có thể là địa chỉ IP hoặc tên miền)
+        'PORT': '5432',                    # Cổng mặc định của PostgreSQL
     }
 }
+
 
 
 # Password validation
