@@ -1,0 +1,174 @@
+Cmd + Shift + R //xoá cache
+
+{% extends 'base.html' %}
+
+{% block title %}Home{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        <nav class="col-md-3 d-none d-md-block sidebar">
+            <div class="sidebar-sticky">
+                <div class="d-flex justify-content-center align-items-center">
+                    <i class="fa-regular fa-circle mr-2 custom-circle"></i> <!-- Thêm class 'custom-circle' để tùy chỉnh icon -->
+                    <h5 class="text-center mb-0">{{ course_name }}</h5>
+                </div>
+                
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <ul class="nav flex-column ml-3">
+                            {% for title, description in split_sub_courses %}
+                                <li class="nav-item">
+                                    <h2 class="title_sub_course">{{ title }}</h2> 
+                                    <p class="description_sub_course">{{ description }}</p> 
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    </li>
+        
+                    {% for module, sub_module_list in modules.items %}
+                    <li class="nav-item">
+                        <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#module{{ forloop.counter }}" aria-expanded="false" aria-controls="module{{ forloop.counter }}">
+                            {{ module }}  
+                            <i class="fa-solid fa-caret-down"></i>
+                        </a>
+                        <div class="collapse" id="module{{ forloop.counter }}">
+                            <ul class="nav flex-column ml-3">
+                                {% for sub_module in sub_module_list %}
+                                <li class="nav-item">
+                                    <a class="nav-link sub-module" href="#" data-sub-module="{{ sub_module }}">{{ sub_module }}</a> 
+                                </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </nav>
+
+        <!-- Content Area -->
+        <main role="main" class="col-md-9 ml-sm-auto col-lg-9 px-4">
+            <h2>Content</h2>
+            <div class="row">
+                <div class="col-md-12">
+                    <div id="content_html_list" class="border p-2">
+                        
+                    </div>
+                </div>
+        
+                <div class="col-md-12">
+                    <div id="img_list" class="border p-2">
+                        <!-- Nơi ảnh sẽ được hiển thị -->
+                    </div>
+                </div>
+        
+                <div class="col-md-12">
+                    <div id="video_url" class="border p-2">
+                        <!-- Nơi video URL sẽ được hiển thị -->
+                    </div>
+                </div>
+            </div>
+        </main>
+        
+        <script>
+            // JavaScript để xử lý sự kiện click lên sub_module
+            document.addEventListener('DOMContentLoaded', function() {
+                const subModuleLinks = document.querySelectorAll('.sub-module');
+        
+                subModuleLinks.forEach(link => {
+                    link.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        const subModuleName = this.getAttribute('data-sub-module');
+        
+                        // Fetch content tương ứng với sub_module được click
+                        fetchContent(subModuleName);
+                    });
+                });
+        
+                function fetchContent(subModuleName) {
+                    // Get the data từ context Django
+                    const data = {{ modules|safe }}; // Chuyển đổi modules từ context sang JSON
+        
+                    // Xóa nội dung cũ
+                    document.getElementById('content_html_list').innerHTML = '';
+                    document.getElementById('img_list').innerHTML = '';
+                    document.getElementById('video_url').innerHTML = '';
+        
+                    // Tìm nội dung tương ứng với sub_module được chọn
+                    for (const [module, sub_modules] of Object.entries(data)) {
+                        if (sub_modules[subModuleName]) {
+                            const content = sub_modules[subModuleName];
+        
+                            // Hiển thị nội dung mới
+                            document.getElementById('content_html_list').innerHTML = content.content_html_list[0] || 'No content available'; // Hiển thị phần tử đầu tiên trong danh sách
+                            document.getElementById('img_list').innerHTML = content.img_list || 'No images available';
+                            document.getElementById('video_url').innerHTML = content.video_url || 'No videos available';
+                            return;
+                        }
+                    }
+                }
+            });
+        </script>
+    </div>
+</div>
+{% endblock %}
+
+
+
+--------------------------------------------------------------------------------------------------------------------------------
+
+import os
+import pandas as pd
+from django.shortcuts import render
+
+def get_home(request):
+    file_path = '/Users/trancuong/Library/Mobile Documents/com~apple~CloudDocs/FPT_Course/course/home/data_csv/Java Web Developer_data.csv'
+
+    # Đọc dữ liệu từ file CSV
+    data = pd.read_csv(file_path)
+
+    # Lấy tên khóa học và danh sách sub_course
+    course_name = data['course'].iloc[0]
+    sub_course_list = data['sub_course'].dropna().unique()  
+        
+    modules = {}
+    for index, row in data.iterrows():
+        module_name = row['module']
+        sub_module_name = row['sub_module']
+
+        # Nếu module chưa có trong dictionary, thêm module mới
+        if module_name not in modules:
+            modules[module_name] = {}
+
+        # Nếu sub_module tồn tại, thêm sub_module và content liên quan
+        if pd.notna(sub_module_name):
+            modules[module_name][sub_module_name] = {
+                'content_html_list': row['content_html_list'] if pd.notna(row['content_html_list']) else '',
+                'img_list': row['img_list'] if pd.notna(row['img_list']) else '',
+                'video_url': row['video_url'] if pd.notna(row['video_url']) else ''
+            }    
+    split_sub_courses = []
+    for sub_course in sub_course_list:
+        if ':' in sub_course:
+            title, description = sub_course.split(':', 1)
+            split_sub_courses.append((title.strip(), description.strip()))
+            
+
+    # Tạo context để truyền vào template
+    context = {
+        'course_name': course_name,
+        'sub_course_list': sub_course_list,
+        'modules': modules,  # Lưu cả sub_module và nội dung liên quan
+        'split_sub_courses': split_sub_courses,
+    }
+
+    # Render template home.html với context
+    return render(request, 'home.html', context)
+
+
+
+
+
+
